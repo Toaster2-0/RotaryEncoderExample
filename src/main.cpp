@@ -40,16 +40,24 @@ void readEncoder()
   }
 }
 
+typedef enum
+{
+  NONE = 0,
+  CLOCKWISE = 1,
+  COUNTERCLOCKWISE = -1,
+  INVALID = 2
+} RotationDirection;
+
 // https://daniellethurow.com/blog/2021/8/30/how-to-use-quadrature-rotary-encoders
 // lookup table, first index is previous value
 // second index is current value
 // says if it's part of the sequence when moving
 // clockwise (1) or counterclockwise (-1)
 // didn't move (0) or skipped a value (2)
-int lookupTable[4][4] = {{0, -1, 1, 2},
-                         {1, 0, 2, -1},
-                         {-1, 2, 0, 1},
-                         {2, 1, -1, 0}};
+int lookupTable[4][4] = {{NONE, COUNTERCLOCKWISE, CLOCKWISE, INVALID},
+                         {CLOCKWISE, NONE, INVALID, COUNTERCLOCKWISE},
+                         {COUNTERCLOCKWISE, INVALID, NONE, CLOCKWISE},
+                         {INVALID, CLOCKWISE, COUNTERCLOCKWISE, NONE}};
 
 void readEncoderSave()
 {
@@ -60,15 +68,15 @@ void readEncoderSave()
   int newVal = (digitalRead(PIN_CLK) << 1) + digitalRead(PIN_DT);
 
   int info = lookupTable[prevVal][newVal];
-  if (info == 1)
+  if (info == CLOCKWISE)
   {
-    clockState |= (1 << newVal); // set the bit to 1
+    clockState |= (1 << newVal);
   }
-  else if (info == -1)
+  else if (info == COUNTERCLOCKWISE)
   {
     counterClockState |= (1 << newVal);
   }
-  else if (info == 2)
+  else if (info == INVALID)
   {
     Serial.println("skipped a value");
   }
